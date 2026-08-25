@@ -1,13 +1,12 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
 	"log"
 
-	"github.com/Mimist-Illusionard/mythings/internal/config"
-	"github.com/Mimist-Illusionard/mythings/internal/repository/postgres"
+	"github.com/Mimist-Illusionard/mythings/config"
+	"github.com/Mimist-Illusionard/mythings/internal/app"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -25,8 +24,7 @@ func main() {
 		log.Fatal(fmt.Errorf("config load: %w", err))
 	}
 
-	db, err := postgres.NewDatabase(cfg)
-	if err != nil {
-		log.Fatal(fmt.Errorf("database connect: %w", err))
+	if err := app.Run(cfg); err != nil {
+		log.Fatal(fmt.Errorf("app run: %w", err))
 	}
 }

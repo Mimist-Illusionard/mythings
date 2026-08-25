@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Mimist-Illusionard/mythings/internal/config"
+	"github.com/Mimist-Illusionard/mythings/config"
 )
 
 type Database struct {
