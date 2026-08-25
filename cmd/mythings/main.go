@@ -16,7 +16,7 @@ var httpPort string
 
 func main() {
 	flag.StringVar(&envPath, "env", ".env", "path to .env file")
-	flag.StringVar(&httpPort, "http", "8080", "application port")
+	flag.StringVar(&httpPort, "port", "8080", "application port")
 	flag.Parse()
 
 	cfg, err := config.New(httpPort, envPath)
