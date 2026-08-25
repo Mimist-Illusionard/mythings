@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -26,12 +27,20 @@ func Run(cfg *config.Config) error {
 
 	tagsRepo := postgres.NewTagsRepo(db)
 	itemsRepo := postgres.NewItemsRepo(db)
+	const uploadDir = "web/uploads"
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+		return fmt.Errorf("create upload directory: %w", err)
+	}
 
-	handler := httpHandlers.New(itemsRepo, tagsRepo)
+	handler := httpHandlers.New(itemsRepo, tagsRepo, uploadDir)
 	router := handler.Router()
 
 	static := http.FileServer(http.Dir("web/static"))
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", static))
+
+	uploads := http.FileServer(http.Dir(uploadDir))
+	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", uploads))
+
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)

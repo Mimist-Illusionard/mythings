@@ -9,8 +9,8 @@ import (
 type ItemFilter struct {
 	Name     string
 	Tags     []string
-	MinPrice *int64
-	MaxPrice *int64
+	MinPrice *float64
+	MaxPrice *float64
 }
 
 type ItemsRepository interface {

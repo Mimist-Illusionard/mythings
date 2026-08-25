@@ -10,9 +10,9 @@
 <header class="topbar">
   <div>
     <h1>MyThings</h1>
-    <p>Простой каталог вещей</p>
+    <p>Личный каталог вещей</p>
   </div>
-  <button id="open-item-form" class="primary">+ Добавить предмет</button>
+  <button id="open-item-form" class="primary pressable" type="button">+ Новый предмет</button>
 </header>
 
 <main class="layout">
@@ -24,23 +24,23 @@
           Название
           <input id="filter-name" type="search" placeholder="Например, часы">
         </label>
-        <label>
-          Теги
-          <select id="filter-tags" multiple size="6"></select>
-        </label>
         <div class="row">
           <label>
-            Цена от
-            <input id="filter-min-price" type="number" min="0" placeholder="0">
+            Цена от, ₽
+            <input id="filter-min-price" type="number" min="0" step="0.01">
           </label>
           <label>
-            Цена до
-            <input id="filter-max-price" type="number" min="0" placeholder="">
+            Цена до, ₽
+            <input id="filter-max-price" type="number" min="0" step="0.01">
           </label>
         </div>
+        <label>
+          Теги
+          <select id="filter-tags" multiple size="5"></select>
+        </label>
         <div class="row actions">
-          <button class="primary" type="submit">Применить</button>
-          <button id="reset-filters" class="secondary" type="button">Сбросить</button>
+          <button class="primary pressable" type="submit">Применить</button>
+          <button id="reset-filters" class="secondary pressable" type="button">Сбросить</button>
         </div>
       </form>
     </section>
@@ -50,76 +50,116 @@
         <h2>Теги</h2>
       </div>
       <form id="tag-form" class="inline-form">
-        <input id="tag-name" placeholder="Новый тег" required>
-        <button class="primary" type="submit">+</button>
+        <input id="tag-name" type="text" maxlength="255" placeholder="Новый тег" required>
+        <button class="primary pressable" type="submit" title="Добавить тег">+</button>
       </form>
       <div id="tags-list" class="tags-list"></div>
     </section>
   </aside>
 
   <section class="content">
-    <div class="section-head">
+    <div class="section-head content-head">
       <div>
         <h2>Предметы</h2>
-        <span id="items-status" class="muted"></span>
+        <span id="items-status" class="muted">Загрузка…</span>
       </div>
     </div>
     <div id="items-grid" class="items-grid"></div>
-    <div id="empty-state" class="empty hidden">Ничего не найдено</div>
+    <div id="empty-state" class="empty hidden">
+      <div class="empty-icon">📦</div>
+      <strong>Предметов пока нет</strong>
+      <span>Создайте первый предмет или измените фильтры.</span>
+    </div>
   </section>
 </main>
 
 <dialog id="item-dialog">
-  <form id="item-form" method="dialog" class="dialog-form">
+  <form id="item-form" class="dialog-form">
     <div class="dialog-head">
       <h2 id="item-dialog-title">Новый предмет</h2>
-      <button id="close-item-form" class="icon-button" type="button" aria-label="Закрыть">×</button>
+      <button id="close-item-form" class="icon-button pressable" type="button" aria-label="Закрыть">×</button>
     </div>
 
     <input id="item-id" type="hidden">
+    <input id="item-image-url" type="hidden">
 
     <label>
       Название
-      <input id="item-name" required maxlength="255">
+      <input id="item-name" type="text" maxlength="255" required>
     </label>
 
     <label>
-      Описание
-      <textarea id="item-description" rows="4"></textarea>
+      Краткое описание
+      <textarea id="item-short-description" rows="2" maxlength="500" placeholder="Короткий текст для карточки предмета"></textarea>
     </label>
 
     <label>
-      Ссылка на изображение
-      <input id="item-image-url" type="url" placeholder="https://...">
+      Полное описание
+      <textarea id="item-description" rows="6" placeholder="Подробное описание предмета"></textarea>
     </label>
 
-    <label>
-      Цена
-      <input id="item-price" type="number" min="0" value="0" required>
-    </label>
+    <div class="row">
+      <label>
+        Дата приобретения
+        <input id="item-purchased-at" type="date">
+      </label>
+      <label>
+        Валюта цены
+        <select id="item-price-currency">
+          <option value="RUB">₽ Рубли</option>
+          <option value="USD">$ Доллары</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="row">
+      <label>
+        Цена
+        <div class="price-input-wrap">
+          <span id="item-price-symbol">₽</span>
+          <input id="item-price" type="number" min="0" step="0.01" value="0" required>
+        </div>
+      </label>
+      <label>
+        Курс доллара, ₽ за $1
+        <input id="item-usd-exchange-rate" type="number" min="0.0001" step="0.0001" placeholder="Например, 81.50" required>
+      </label>
+    </div>
 
     <label>
-      Атрибуты (JSON)
-      <textarea id="item-attributes" rows="5" spellcheck="false" placeholder='{"brand":"Longines","year":1900}'>{}</textarea>
+      Изображение
+      <input id="item-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+      <span class="muted small">JPEG, PNG, WEBP или GIF, до 10 МБ</span>
     </label>
+
+    <div id="image-preview-wrap" class="image-preview-wrap hidden">
+      <img id="image-preview" class="image-preview" alt="Предпросмотр">
+      <button id="remove-image" class="secondary small-button pressable" type="button">Убрать изображение</button>
+    </div>
 
     <div class="dialog-actions">
-      <button id="cancel-item" class="secondary" type="button">Отмена</button>
-      <button class="primary" type="submit">Сохранить</button>
+      <button id="cancel-item" class="secondary pressable" type="button">Отмена</button>
+      <button id="save-item" class="primary pressable" type="submit">Сохранить</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="view-dialog" class="view-dialog">
+  <div class="view-shell">
+    <button id="close-view-dialog" class="icon-button view-close pressable" type="button" aria-label="Закрыть">×</button>
+    <div id="view-content"></div>
+  </div>
 </dialog>
 
 <dialog id="tags-dialog">
   <div class="dialog-form">
     <div class="dialog-head">
       <h2>Теги предмета</h2>
-      <button id="close-tags-dialog" class="icon-button" type="button">×</button>
+      <button id="close-tags-dialog" class="icon-button pressable" type="button">×</button>
     </div>
     <p id="tags-item-title" class="muted"></p>
     <input id="tags-item-id" type="hidden">
     <div id="assign-tags-list" class="assign-tags-list"></div>
-    <p class="muted small">Кнопка меняет связь предмета и тега через POST/DELETE.</p>
   </div>
 </dialog>
 

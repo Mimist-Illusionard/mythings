@@ -1,6 +1,5 @@
-DELETE TABLE items;
-DELETE TABLE tags;
-DELETE TABLE items_tags;
-
-DELETE INDEX idx_items_tags_tag_id;
-DELETE INDEX idx_items_attributes;
+DROP INDEX IF EXISTS idx_items_attributes;
+DROP INDEX IF EXISTS idx_items_tags_tag_id;
+DROP TABLE IF EXISTS items_tags;
+DROP TABLE IF EXISTS tags;
+DROP TABLE IF EXISTS items;

@@ -30,3 +30,7 @@ go.work.sum
 # Editor/IDE
 .idea/
 .vscode/
+
+# Uploaded item images
+web/uploads/*
+!web/uploads/.gitkeep

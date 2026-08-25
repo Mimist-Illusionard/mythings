@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -15,11 +16,15 @@ import (
 )
 
 type itemRequest struct {
-	Name        string         `json:"name"`
-	Description string         `json:"description"`
-	ImageURL    string         `json:"image_url"`
-	Price       int64          `json:"price"`
-	Attributes  map[string]any `json:"attributes"`
+	Name             string         `json:"name"`
+	ShortDescription string         `json:"short_description"`
+	Description      string         `json:"description"`
+	ImageURL         string         `json:"image_url"`
+	Price            float64        `json:"price"`
+	PriceCurrency    string         `json:"price_currency"`
+	USDExchangeRate  float64        `json:"usd_exchange_rate"`
+	PurchasedAt      string         `json:"purchased_at"`
+	Attributes       map[string]any `json:"attributes,omitempty"`
 }
 
 func (h *Handler) getItem(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +60,7 @@ func (h *Handler) listItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if value := r.URL.Query().Get("min_price"); value != "" {
-		price, err := strconv.ParseInt(value, 10, 64)
+		price, err := strconv.ParseFloat(value, 64)
 		if err != nil || price < 0 {
 			writeError(w, http.StatusBadRequest, "invalid min_price")
 			return
@@ -64,7 +69,7 @@ func (h *Handler) listItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if value := r.URL.Query().Get("max_price"); value != "" {
-		price, err := strconv.ParseInt(value, 10, 64)
+		price, err := strconv.ParseFloat(value, 64)
 		if err != nil || price < 0 {
 			writeError(w, http.StatusBadRequest, "invalid max_price")
 			return
@@ -88,20 +93,21 @@ func (h *Handler) createItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.TrimSpace(req.Name) == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
-		return
-	}
-	if req.Price < 0 {
-		writeError(w, http.StatusBadRequest, "price must be greater than or equal to 0")
+	purchasedAt, currency, err := validateItemRequest(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	item := models.NewItem(req.Name, models.ItemParams{
-		Description: req.Description,
-		ImageURL:    req.ImageURL,
-		Price:       req.Price,
-		Attributes:  req.Attributes,
+		ShortDescription: req.ShortDescription,
+		Description:      req.Description,
+		ImageURL:         req.ImageURL,
+		Price:            req.Price,
+		PriceCurrency:    currency,
+		USDExchangeRate:  req.USDExchangeRate,
+		PurchasedAt:      purchasedAt,
+		Attributes:       req.Attributes,
 	})
 
 	if err := h.items.Save(r.Context(), item); err != nil {
@@ -125,12 +131,9 @@ func (h *Handler) updateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.TrimSpace(req.Name) == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
-		return
-	}
-	if req.Price < 0 {
-		writeError(w, http.StatusBadRequest, "price must be greater than or equal to 0")
+	purchasedAt, currency, err := validateItemRequest(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -145,10 +148,16 @@ func (h *Handler) updateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item.Name = req.Name
+	item.ShortDescription = req.ShortDescription
 	item.Description = req.Description
 	item.ImageURL = req.ImageURL
 	item.Price = req.Price
-	item.Attributes = req.Attributes
+	item.PriceCurrency = currency
+	item.USDExchangeRate = req.USDExchangeRate
+	item.PurchasedAt = purchasedAt
+	if req.Attributes != nil {
+		item.Attributes = req.Attributes
+	}
 
 	if err := h.items.Save(r.Context(), item); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -160,6 +169,36 @@ func (h *Handler) updateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, item)
+}
+
+func validateItemRequest(req itemRequest) (*time.Time, string, error) {
+	if strings.TrimSpace(req.Name) == "" {
+		return nil, "", errors.New("name is required")
+	}
+	if req.Price < 0 {
+		return nil, "", errors.New("price must be greater than or equal to 0")
+	}
+	if req.USDExchangeRate <= 0 {
+		return nil, "", errors.New("usd_exchange_rate must be greater than 0")
+	}
+
+	currency := strings.ToUpper(strings.TrimSpace(req.PriceCurrency))
+	if currency == "" {
+		currency = models.CurrencyRUB
+	}
+	if currency != models.CurrencyRUB && currency != models.CurrencyUSD {
+		return nil, "", errors.New("price_currency must be RUB or USD")
+	}
+
+	if strings.TrimSpace(req.PurchasedAt) == "" {
+		return nil, currency, nil
+	}
+
+	value, err := time.Parse("2006-01-02", req.PurchasedAt)
+	if err != nil {
+		return nil, "", errors.New("purchased_at must have YYYY-MM-DD format")
+	}
+	return &value, currency, nil
 }
 
 func (h *Handler) deleteItem(w http.ResponseWriter, r *http.Request) {

@@ -29,14 +29,16 @@ type Tags interface {
 }
 
 type Handler struct {
-	items Items
-	tags  Tags
+	items     Items
+	tags      Tags
+	uploadDir string
 }
 
-func New(items Items, tags Tags) *Handler {
+func New(items Items, tags Tags, uploadDir string) *Handler {
 	return &Handler{
-		items: items,
-		tags:  tags,
+		items:     items,
+		tags:      tags,
+		uploadDir: uploadDir,
 	}
 }
 
@@ -56,6 +58,8 @@ func (h *Handler) Router() *mux.Router {
 	router.HandleFunc("/tags", h.createTag).Methods(http.MethodPost)
 	router.HandleFunc("/tags/{id:[0-9]+}", h.updateTag).Methods(http.MethodPut)
 	router.HandleFunc("/tags/{name}", h.deleteTag).Methods(http.MethodDelete)
+
+	router.HandleFunc("/uploads", h.uploadImage).Methods(http.MethodPost)
 
 	return router
 }
