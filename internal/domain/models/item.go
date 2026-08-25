@@ -3,16 +3,16 @@ package models
 import "time"
 
 type Item struct {
-	ID int64
+	ID int64 `json:"id"`
 
-	Name        string
-	Description string
-	ImageURL    string
-	Price       int64
-	Attributes  map[string]any
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	ImageURL    string         `json:"image_url"`
+	Price       int64          `json:"price"`
+	Attributes  map[string]any `json:"attributes"`
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ItemParams struct {

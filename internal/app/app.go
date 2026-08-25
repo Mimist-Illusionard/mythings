@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -12,7 +11,7 @@ import (
 
 	"github.com/Mimist-Illusionard/mythings/config"
 	"github.com/Mimist-Illusionard/mythings/internal/infrastructure/postgres"
-	"github.com/Mimist-Illusionard/mythings/internal/interfaces/http/handlers"
+	httpHandlers "github.com/Mimist-Illusionard/mythings/internal/interfaces/http/handlers"
 )
 
 func Run(cfg *config.Config) error {
@@ -23,43 +22,46 @@ func Run(cfg *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("database connect: %w", err)
 	}
+	defer db.Close()
 
 	tagsRepo := postgres.NewTagsRepo(db)
 	itemsRepo := postgres.NewItemsRepo(db)
 
-	router := handlers.New(itemsRepo, tagsRepo)
+	handler := httpHandlers.New(itemsRepo, tagsRepo)
+	router := handler.Router()
+
+	static := http.FileServer(http.Dir("web/static"))
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", static))
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		http.ServeFile(w, r, "web/index.html")
+	}).Methods(http.MethodGet)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.HTTPPort,
-		IdleTimeout:       60 * time.Second,
+		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       5 * time.Second,
-		WriteTimeout:      5 * time.Second,
-		Handler:           router.Router(),
 	}
 
 	errCh := make(chan error, 1)
 	go func() {
-		log.Printf("http server listening on %s", server.Addr)
-		err := server.ListenAndServe()
-		if errors.Is(err, http.ErrServerClosed) {
-			err = nil
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- err
 		}
-		errCh <- err
 	}()
 
 	select {
-	case err := <-errCh:
-		return err
 	case <-ctx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			_ = server.Close()
-			return fmt.Errorf("shutdown http server: %w", err)
+			return fmt.Errorf("http shutdown: %w", err)
 		}
-
-		return <-errCh
+		return nil
+	case err := <-errCh:
+		return fmt.Errorf("http server: %w", err)
 	}
 }
