@@ -1,0 +1,9 @@
+.git
+.gitignore
+.idea
+.vscode
+.env
+*.log
+*.zip
+web/uploads/*
+!web/uploads/.gitkeep

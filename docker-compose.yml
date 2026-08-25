@@ -1,21 +1,41 @@
 services:
-  db:
-    image: postgres:16
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mythings-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DB_NAME: mythings
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/web/uploads
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: mythings-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_DB: ${DB_NAME:-postgres}
-    ports:
-      - "${DB_PORT:-9090}:5432"
+      POSTGRES_DB: mythings
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mythings"]
       interval: 5s
-      timeout: 3s
+      timeout: 5s
       retries: 10
-    networks:
-      - mythings
+      start_period: 5s
 
-networks:
-  mythings:
-    driver: bridge
+volumes:
+  postgres_data:
+  uploads_data:
