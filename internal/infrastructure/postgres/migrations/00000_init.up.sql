@@ -1,20 +1,20 @@
 CREATE TABLE items (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    description TEXT,
+    description TEXT NOT NULL DEFAULT '',
 
-    image_url TEXT,
+    image_url TEXT NOT NULL DEFAULT '',
 
-    price NUMERIC(12, 2),
+    price BIGINT NOT NULL DEFAULT 0,
     attributes JSONB NOT NULL default '{}',
 
-    created_at TIMESTAMPZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE tags (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255), NOT NULL UNIQUE
+    name VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE items_tags (

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"

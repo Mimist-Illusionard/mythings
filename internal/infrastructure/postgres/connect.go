@@ -8,11 +8,7 @@ import (
 	"github.com/Mimist-Illusionard/mythings/config"
 )
 
-type Database struct {
-	sql *sql.DB
-}
-
-func NewDatabase(cfg *config.Config) (*Database, error) {
+func NewConnection(cfg *config.Config) (*sql.DB, error) {
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
 		cfg.DBParams.Host, cfg.DBParams.User, cfg.DBParams.Pass, cfg.DBParams.Name, cfg.DBParams.Port,
@@ -45,7 +41,5 @@ func NewDatabase(cfg *config.Config) (*Database, error) {
 		return nil, fmt.Errorf("db migration: %w", err)
 	}
 
-	return &Database{
-		sql: db,
-	}, nil
+	return db, nil
 }
