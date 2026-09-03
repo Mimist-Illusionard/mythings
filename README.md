@@ -1,6 +1,6 @@
 # mythings
 
-[Banner](documentation/banner.png)
+![Banner](documentation/banner.png)
 
 mythings is a personal catalog application for keeping track of the things you own.
 
